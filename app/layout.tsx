@@ -1,15 +1,17 @@
-import '../app/globals.css'; // หรือ './globals.css' ถ้าคุณย้ายไฟล์ไว้ใน app/
-import type { ReactNode } from 'react';
+import './globals.css';
 
 export const metadata = {
-  title: 'โปรแกรมดาวน์โหลดสื่อ',
-  description: 'ดาวน์โหลดวิดีโอหรือไฟล์เสียงจากลิงก์ที่คุณมีสิทธิ์ใช้งาน',
+  title: 'ดาวน์โหลด Youtube-Tiktok AEKAI',
+  description: 'เว็บดาวน์โหลดวิดีโอและเสียงด้วย yt-dlp + ffmpeg',
+  icons: {
+    icon: '/AEK.ico',  // ใช้ไฟล์ที่คุณวางใน public/
+  },
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="th">
-      <body className="min-h-screen text-slate-800">
+      <body className="min-h-screen bg-slate-50 text-slate-800">
         {children}
       </body>
     </html>

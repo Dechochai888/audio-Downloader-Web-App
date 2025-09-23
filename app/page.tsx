@@ -7,7 +7,7 @@ export default function Page() {
   const [url, setUrl] = useState('');
   const [mode, setMode] = useState<'audio' | 'video'>('video');
   const [quality, setQuality] = useState<'720' | '1080' | 'best'>('720');
-  const [audioFormat, setAudioFormat] = useState<'mp3' | 'wav'>('mp3'); // รูปแบบเสียง
+  const [audioFormat, setAudioFormat] = useState<'mp3' | 'wav'>('mp3');
   const [loading, setLoading] = useState(false);
   const [log, setLog] = useState<string[]>([]);
 
@@ -21,21 +21,14 @@ export default function Page() {
       const res = await fetch('/api/download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify(body)
       });
-      if (!res.ok) {
-        const t = await res.text();
-        throw new Error(t || 'Request failed');
-      }
-      // ดึงชื่อไฟล์จาก Content-Disposition (จะได้ fallback ASCII เสมอ)
+      if (!res.ok) throw new Error(await res.text() || 'Request failed');
+
       const disp = res.headers.get('Content-Disposition') || '';
       const match = /filename=\"?([^\"]+)\"?/i.exec(disp);
       const fallback =
-        mode === 'audio'
-          ? audioFormat === 'wav'
-            ? 'audio.wav'
-            : 'audio.mp3'
-          : 'video.mp4';
+        mode === 'audio' ? (audioFormat === 'wav' ? 'audio.wav' : 'audio.mp3') : 'video.mp4';
       const filename = match?.[1] || fallback;
 
       const blob = await res.blob();
@@ -58,11 +51,11 @@ export default function Page() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
       <div className="mb-10 text-center">
-        <h1 className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-brand-700 to-brand-500 text-transparent bg-clip-text">
-          ดาวน์โหลดสื่อ AEKAI Studio
+        <h1 className="text-3xl md:text-4xl font-black text-white text-shadow-lg">
+          ดาวน์โหลดวิดีโอ/เสียง AEKAI Studio
         </h1>
-        <p className="text-slate-600 mt-2">
-          วางลิงก์ที่คุณมีสิทธิ์ดาวน์โหลด เลือกวิดีโอหรือเสียง แล้วกด “ดาวน์โหลด”
+        <p className="mt-2 text-white/90 text-shadow">
+          วางลิงก์สาธารณะ Youtube-TikTok เลือกโหมด แล้วกด “ดาวน์โหลด”
         </p>
       </div>
 
@@ -70,45 +63,30 @@ export default function Page() {
         <form onSubmit={handleDownload} className="grid grid-cols-1 gap-5">
           <div>
             <Label htmlFor="url">ลิงก์</Label>
-            <Input
-              id="url"
-              placeholder="https://..."
-              value={url}
-              onChange={(e: any) => setUrl(e.target.value)}
-            />
+            <Input id="url" placeholder="https://..." value={url} onChange={(e: any) => setUrl(e.target.value)} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* โหมด */}
             <div>
               <Label>โหมด</Label>
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => setMode('video')}
-                  className={`flex-1 rounded-xl border px-4 py-2.5 ${
-                    mode === 'video'
-                      ? 'border-brand-500 bg-brand-50 text-brand-800'
-                      : 'border-slate-200'
-                  }`}
+                  className={`flex-1 rounded-xl border px-4 py-2.5 ${mode==='video' ? 'border-brand-500 bg-brand-50 text-brand-800' : 'border-slate-200'}`}
                 >
                   <Video className="inline mr-2" /> วิดีโอ
                 </button>
                 <button
                   type="button"
                   onClick={() => setMode('audio')}
-                  className={`flex-1 rounded-xl border px-4 py-2.5 ${
-                    mode === 'audio'
-                      ? 'border-brand-500 bg-brand-50 text-brand-800'
-                      : 'border-slate-200'
-                  }`}
+                  className={`flex-1 rounded-xl border px-4 py-2.5 ${mode==='audio' ? 'border-brand-500 bg-brand-50 text-brand-800' : 'border-slate-200'}`}
                 >
                   <Music2 className="inline mr-2" /> เสียง
                 </button>
               </div>
             </div>
 
-            {/* คุณภาพวิดีโอ */}
             <div>
               <Label>คุณภาพวิดีโอ</Label>
               <Select
@@ -119,31 +97,25 @@ export default function Page() {
                   { value: '1080', label: 'สูงสุด 1080p' },
                   { value: '720', label: 'สูงสุด 720p' },
                 ]}
-                disabled={mode !== 'video'}
+                disabled={mode!=='video'}
               />
             </div>
 
-            {/* รูปแบบเสียง */}
             <div>
               <Label>รูปแบบเสียง</Label>
               <Select
                 value={audioFormat}
                 onChange={(e: any) => setAudioFormat(e.target.value)}
                 options={[
-                  { value: 'mp3', label: 'MP3 (แนะนำ/ไฟล์เล็ก)' },
-                  { value: 'wav', label: 'WAV (ไม่บีบอัด/ไฟล์ใหญ่)' },
+                  { value: 'mp3', label: 'MP3 (ไฟล์เล็ก แนะนำ)' },
+                  { value: 'wav', label: 'WAV (ไม่บีบอัด ไฟล์ใหญ่)' },
                 ]}
-                disabled={mode !== 'audio'}
+                disabled={mode!=='audio'}
               />
             </div>
 
             <div className="md:col-span-3">
-              <Button
-                type="submit"
-                loading={loading}
-                className="w-full"
-                aria-label="ดาวน์โหลด"
-              >
+              <Button type="submit" loading={loading} className="w-full" aria-label="ดาวน์โหลด">
                 <Download className="h-4 w-4" /> ดาวน์โหลด
               </Button>
             </div>
@@ -153,7 +125,7 @@ export default function Page() {
             <Info className="mt-0.5 h-4 w-4" />
             <p>
               แอปนี้ใช้ <code>yt-dlp</code> + <code>ffmpeg</code> ทางฝั่งเซิร์ฟเวอร์
-              โปรดดาวน์โหลดเฉพาะเนื้อหาที่คุณเป็นเจ้าของหรือได้รับอนุญาต
+              รองรับเฉพาะคอนเทนต์สาธารณะ หากคลิปถูกจำกัด/ต้องยืนยันตัวตน ระบบจะดาวน์โหลดไม่ได้
             </p>
           </div>
         </form>
@@ -163,11 +135,7 @@ export default function Page() {
         <Card>
           <h3 className="font-semibold mb-2">สถานะการทำงาน</h3>
           <div className="min-h-16 text-sm space-y-1">
-            {log.length === 0 ? (
-              <p className="text-slate-500">ยังไม่มีรายการ</p>
-            ) : (
-              log.map((line, i) => <p key={i}>{line}</p>)
-            )}
+            {log.length === 0 ? <p className="text-slate-500">ยังไม่มีรายการ</p> : log.map((line, i) => <p key={i}>{line}</p>)}
           </div>
         </Card>
       </div>
