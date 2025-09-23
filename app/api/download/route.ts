@@ -32,9 +32,10 @@ function runYtDlp(args: string[]) {
     '--sleep-requests', '1',
     '--user-agent',
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    '--extractor-args', 'youtube:player_client=android',
+    '--extractor-args', 'youtube:player_client=android'
   ];
   const finalArgs = [...base, ...args];
+
   return new Promise<{ code: number }>((resolve, reject) => {
     const proc = spawn(YTDLP, finalArgs, { shell: false });
     proc.stdout.on('data', (d) => console.log('[yt-dlp]', d.toString()));
@@ -45,28 +46,14 @@ function runYtDlp(args: string[]) {
 }
 
 export async function POST(req: NextRequest) {
-  let envCookiesPath: string | null = null;
-  let filePath: string | null = null;
-
   try {
     const { url, mode = 'video', quality = '720', audioFormat = 'mp3' } = await req.json();
-    if (!url || typeof url !== 'string') return new Response('Invalid URL', { status: 400 });
+    if (!url || typeof url !== 'string') {
+      return new Response('Invalid URL', { status: 400 });
+    }
 
     const tmpDir = path.join(process.cwd(), '.tmp');
     await fs.mkdir(tmpDir, { recursive: true });
-
-    // อ่าน cookies จาก ENV (ถ้าเปิดใช้งาน)
-    const useEnvCookies = String(process.env.USE_ENV_COOKIES || '').toLowerCase() === 'true';
-    const envCookiesTxt = process.env.YT_COOKIES_TXT || '';
-    if (useEnvCookies && envCookiesTxt.trim().length > 0) {
-      // เขียนเป็นไฟล์ชั่วคราวเพื่อส่งให้ yt-dlp
-      envCookiesPath = path.join(tmpDir, `cookies_env_${Date.now()}.txt`);
-      // ป้องกันค่าแปลก ๆ เกินเหตุ (เช่น >1MB)
-      if (envCookiesTxt.length > 1_000_000) {
-        return new Response('Cookies ENV is too large', { status: 400 });
-      }
-      await fs.writeFile(envCookiesPath, envCookiesTxt, { encoding: 'utf8' });
-    }
 
     const ts = Date.now().toString();
     const outPattern = path.join(tmpDir, `${ts}_.%(title).200B.%(ext)s`);
@@ -75,7 +62,6 @@ export async function POST(req: NextRequest) {
     if (mode === 'audio') {
       const fmt = audioFormat === 'wav' ? 'wav' : 'mp3';
       args = [
-        ...(envCookiesPath ? ['--cookies', envCookiesPath] : []),
         '-f', 'bestaudio/best',
         '--extract-audio', '--audio-format', fmt,
         ...(fmt === 'mp3' ? ['--audio-quality', '0', '--embed-thumbnail'] : []),
@@ -88,7 +74,6 @@ export async function POST(req: NextRequest) {
       if (quality === '720') format = 'bestvideo[height<=720]+bestaudio/best[height<=720]';
       else if (quality === '1080') format = 'bestvideo[height<=1080]+bestaudio/best[height<=1080]';
       args = [
-        ...(envCookiesPath ? ['--cookies', envCookiesPath] : []),
         '-f', format,
         '--merge-output-format', 'mp4',
         '--embed-metadata',
@@ -98,15 +83,11 @@ export async function POST(req: NextRequest) {
     }
 
     const { code } = await runYtDlp(args);
-
-    // ลบไฟล์คุกกี้ชั่วคราวทันทีหลังใช้งาน
-    if (envCookiesPath) { try { await fs.unlink(envCookiesPath); } catch {} }
-
     if (code !== 0) {
-      const msgWhenRestricted = useEnvCookies
-        ? 'ดาวน์โหลดไม่ได้: คุกกี้จาก ENV อาจหมดอายุ/ไม่พอสิทธิ์ หรือคลิปถูกจำกัดเพิ่มเติม'
-        : 'ดาวน์โหลดไม่ได้: คลิปนี้อาจถูกจำกัด (ต้องยืนยันตัวตน/จำกัดอายุ/ล็อกอิน). โหมดนี้รองรับเฉพาะลิงก์สาธารณะ';
-      return new Response(msgWhenRestricted, { status: 500 });
+      return new Response(
+        'ดาวน์โหลดไม่ได้: คลิปนี้น่าจะถูกจำกัดโดย YouTube (ต้องยืนยันตัวตน/จำกัดอายุ/ล็อกอิน). โหมดนี้รองรับเฉพาะลิงก์สาธารณะ โปรดลองลิงก์อื่น',
+        { status: 500 }
+      );
     }
 
     const files = await fs.readdir(tmpDir);
@@ -116,7 +97,7 @@ export async function POST(req: NextRequest) {
 
     const stats = await Promise.all(candidates.map(async p => ({ p, t: (await fs.stat(p)).mtimeMs })));
     stats.sort((a, b) => b.t - a.t);
-    filePath = stats[0].p;
+    const filePath = stats[0].p;
 
     const filename = sanitizeFilename(path.basename(filePath));
     const ext = path.extname(filename).toLowerCase();
@@ -135,7 +116,7 @@ export async function POST(req: NextRequest) {
     headers.set('Cache-Control', 'no-store');
 
     const stream = fssync.createReadStream(filePath);
-    stream.on('close', async () => { try { await fs.unlink(filePath!); } catch {} });
+    stream.on('close', async () => { try { await fs.unlink(filePath); } catch {} });
 
     return new Response(stream as any, { status: 200, headers });
   } catch (err: any) {
