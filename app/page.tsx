@@ -50,6 +50,7 @@ export default function Page() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
+      {/* หัวข้อ */}
       <div className="mb-10 text-center">
         <h1 className="text-3xl md:text-4xl font-black text-white text-shadow-lg">
           ดาวน์โหลดวิดีโอ/เสียง AEKAI Studio
@@ -59,11 +60,17 @@ export default function Page() {
         </p>
       </div>
 
-      <Card>
+      {/* ฟอร์มหลัก */}
+      <Card className="bg-white/90 backdrop-blur-md">
         <form onSubmit={handleDownload} className="grid grid-cols-1 gap-5">
           <div>
             <Label htmlFor="url">ลิงก์</Label>
-            <Input id="url" placeholder="https://..." value={url} onChange={(e: any) => setUrl(e.target.value)} />
+            <Input
+              id="url"
+              placeholder="https://..."
+              value={url}
+              onChange={(e: any) => setUrl(e.target.value)}
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -121,7 +128,7 @@ export default function Page() {
             </div>
           </div>
 
-          <div className="text-xs text-slate-500 flex items-start gap-2">
+          <div className="text-xs text-slate-600 flex items-start gap-2">
             <Info className="mt-0.5 h-4 w-4" />
             <p>
               แอปนี้ใช้ <code>yt-dlp</code> + <code>ffmpeg</code> ทางฝั่งเซิร์ฟเวอร์
@@ -131,11 +138,32 @@ export default function Page() {
         </form>
       </Card>
 
+      {/* ปุ่มดาวน์โหลดตัวช่วย Windows */}
+      <div className="mt-4 text-center">
+        <a
+          href="/download.bat"
+          download="download.bat"
+          className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 bg-emerald-600 text-white font-semibold shadow hover:bg-emerald-700"
+          title="ดาวน์โหลดสคริปต์สำหรับ Windows"
+        >
+          <Download className="h-4 w-4" />
+          ดาวน์โหลดตัวช่วย Windows (.bat)
+        </a>
+        <p className="text-xs text-white/90 text-shadow mt-2">
+          ใช้เมื่อลิงก์ถูกจำกัดสิทธิ์: ติดตั้ง <code>yt-dlp</code> บน Windows แล้วดับเบิลคลิกไฟล์
+          จากนั้นวางลิงก์ในหน้าต่างที่เปิดขึ้น
+        </p>
+      </div>
+
+      {/* สถานะ */}
       <div className="mt-6">
-        <Card>
+        <Card className="bg-white/90 backdrop-blur-md">
           <h3 className="font-semibold mb-2">สถานะการทำงาน</h3>
           <div className="min-h-16 text-sm space-y-1">
-            {log.length === 0 ? <p className="text-slate-500">ยังไม่มีรายการ</p> : log.map((line, i) => <p key={i}>{line}</p>)}
+            {log.length === 0
+              ? <p className="text-slate-500">ยังไม่มีรายการ</p>
+              : log.map((line, i) => <p key={i}>{line}</p>)
+            }
           </div>
         </Card>
       </div>
